@@ -1,0 +1,43 @@
+name: Setup MINEKUB Discord
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only? true = do not change Discord"
+        required: true
+        type: choice
+        options:
+          - "true"
+          - "false"
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Discord secrets are configured
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ] || [ -z "$DISCORD_GUILD_ID" ]; then
+            echo "::error::Set DISCORD_BOT_TOKEN and DISCORD_GUILD_ID in repository Actions secrets"
+            exit 1
+          fi
+      - name: Preview or apply MINEKUB setup
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: python setup_minekub.py
