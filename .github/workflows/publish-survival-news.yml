@@ -1,0 +1,40 @@
+name: Publish MINEKUB Survival News
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/survival-news.json"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only, without posting to Discord"
+        required: true
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minekub-survival-news
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate and publish latest Minecraft survival news
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+        run: python post_survival_news.py
